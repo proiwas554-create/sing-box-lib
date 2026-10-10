@@ -1,0 +1,39 @@
+name: Build Libbox for iOS 12
+
+on:
+  workflow_dispatch:  # запуск вручную
+
+jobs:
+  build:
+    runs-on: macos-13   # macOS 13 = Xcode 15 по умолчанию
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.20.14'
+
+      - name: Install gomobile
+        run: |
+          go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.12
+          go install github.com/sagernet/gomobile/cmd/gobind@v0.1.12
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Init gomobile
+        run: gomobile init
+
+      - name: Build Libbox
+        working-directory: experimental/libbox
+        run: |
+          gomobile bind \
+            -target=ios \
+            -iosversion=12.0 \
+            -tags "with_gvisor with_quic with_utls with_low_memory" \
+            -o ../../Libbox.xcframework \
+            .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Libbox.xcframework
+          path: Libbox.xcframework
